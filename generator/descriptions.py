@@ -48,6 +48,7 @@ def get_messages(n):
 
 
 def get_prompts(n):
+    print(f"generating {n} descriptions")
     results = ChatCompletion.create(
         model="gpt-4",
         messages=get_messages(n),
@@ -56,7 +57,6 @@ def get_prompts(n):
     )
     arguments = results['choices'][0]['message']['function_call']['arguments']
     prompts = loads(arguments)['prompt']
-    for p in prompts:
-        print(p)
+    print(f"generated {len(prompts)} descriptions")
     return prompts
 

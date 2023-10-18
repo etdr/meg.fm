@@ -8,6 +8,7 @@ SYSPROMPT_VERSION = '2023-10-15'
 
 config = dotenv_values()
 
+CONTENT_DIR = config['CONTENT_DIR']
 openai.organization = config['OPENAI_ORG']
 openai.api_key = config['OPENAI_KEY']
 
@@ -61,6 +62,7 @@ def get_messages(prompts):
 
 
 def get_metadata(selections):
+    print(f"generating metadata for {len(selections)} selections")
     results = ChatCompletion.create(
         model="gpt-4",
         messages=get_messages([s['prompt'] for s in selections]),
