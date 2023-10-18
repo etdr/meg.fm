@@ -1,25 +1,29 @@
 
 import os
 from subprocess import run, DEVNULL
+from contextlib import redirect_stdout, redirect_stderr
+from warnings import catch_warnings, simplefilter
 from dotenv import dotenv_values
 
 from audiocraft.models import MusicGen
 from audiocraft.data.audio import audio_write
 
+SUBSET_SIZE = 5
+
 config = dotenv_values()
 CONTENT_DIR = config['CONTENT_DIR']
 
-SUBSET_SIZE = 5
-
-model = MusicGen.get_pretrained("facebook/musicgen-large")
+with catch_warnings():
+    simplefilter("ignore")
+    model = MusicGen.get_pretrained("facebook/musicgen-large")
 model.set_generation_params(duration=60)
 
 
 def generate_subset(prompts, batchnum=None):
     print(f"generating music for ids:")
-    for p in prompts:
-        print(f"• {p['uuid']}".rjust(4))
-    return model.generate(p['prompt'] for p in prompts)
+    for i, p in enumerate(prompts):
+        print(f"{i:03} • {p['uuid']}".rjust(4))
+    return model.generate((p['prompt'] for p in prompts), progress=True)
 
 
 # TODO: Add better index printing
@@ -39,12 +43,13 @@ def generate_music(prompts, batchnum=None):
     for selection in music:
         filename = f"{CONTENT_DIR}/music/{selection[0]}"
         # print(f'writing wav file for selection {selection[0]}')
-        audio_write(
-            filename,
-            selection[1].cpu(),
-            model.sample_rate,
-            strategy='loudness'
-        )
+        with open(os.devnull, 'w') as fnull, redirect_stdout(fnull), redirect_stderr(fnull):
+            audio_write(
+                filename,
+                selection[1].cpu(),
+                model.sample_rate,
+                strategy='loudness'
+            )
         run([
             "ffmpeg",
             "-i", f"{filename}.wav",

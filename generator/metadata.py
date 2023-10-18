@@ -7,7 +7,6 @@ from openai import ChatCompletion
 SYSPROMPT_VERSION = '2023-10-15'
 
 config = dotenv_values()
-
 CONTENT_DIR = config['CONTENT_DIR']
 openai.organization = config['OPENAI_ORG']
 openai.api_key = config['OPENAI_KEY']

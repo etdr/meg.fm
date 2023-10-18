@@ -11,7 +11,6 @@ from metadata import get_metadata, SYSPROMPT_VERSION as META_SYSP_VER
 from artwork import get_artwork, ARTSOURCE
 
 config = dotenv_values()
-
 CONTENT_DIR = config['CONTENT_DIR']
 
 yaml = YAML()
@@ -54,7 +53,7 @@ def generate_tracks(n, batchnum=None):
 
 def batch_generate_tracks(batches, batch_size):
     for i in range(batches):
-        print(f"──────────────── COMMENCING WITH BATCH {i} OF {batches} ────────────────")
+        print(f"──────────────── COMMENCING WITH BATCH {i} OF {batches} ".ljust(80, '─'))
         generate_tracks(batch_size)
 
 
@@ -66,10 +65,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.batches == 1:
-        print(f"──────────────── COMMENCING WITH SINGLE BATCH ────────────────")
+        print(f"──────────────── COMMENCING WITH SINGLE BATCH ".ljust(80, '─'))
         generate_tracks(args.n)
     else:
-        print(f"════════════════ STARTING RUN OF {args.batches} BATCHES ════════════════")
+        print(f"════════════════ STARTING RUN OF {args.batches} BATCHES ".ljust(80, '═'))
         batch_generate_tracks(args.batches, args.n)
     
-    (f"════════════════ GENERATION COMPLETE! 💯 ════════════════")
+    print(f"════════════════ GENERATION COMPLETE! 💯 ".ljust(80, '═'))
