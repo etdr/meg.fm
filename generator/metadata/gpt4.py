@@ -69,6 +69,7 @@ def get_metadata_gpt4(selections):
         functions=[generate_metadata_function]
     )
     arguments = results['choices'][0]['message']['function_call']['arguments']
+        # .replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
     metadata = loads(arguments)['metadata']
     for s, m in zip(selections, metadata):
         s['metadata'] = m

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 from uuid import uuid4
 from datetime import datetime
@@ -5,7 +6,7 @@ from argparse import ArgumentParser
 from dotenv import dotenv_values
 from ruamel.yaml import YAML
 
-from utils import gtw
+from utils import banner
 from descriptions import get_descriptions, \
     SYSPROMPT_VERSION as PROMPT_SYSP_VER
 from music import generate_music
@@ -57,7 +58,7 @@ def generate_tracks(n):
 
 def batch_generate_tracks(batches, batch_size):
     for i in range(batches):
-        print(f"──────────────── COMMENCING WITH BATCH {i + 1} OF {batches} ".ljust(gtw(), '─'))
+        banner(f"COMMENCING WITH BATCH {i + 1} OF {batches}", 1)
         generate_tracks(batch_size)
 
 
@@ -65,14 +66,17 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="generates batches of hypothetical music and associated data")
     parser.add_argument("n", type=int, help="number of tracks to generate per batch")
     parser.add_argument("-b", "--batches", type=int, help="number of batches", default=1)
-    # add argument for artwork generator selection
+    # add arguments (when applicable) for:
+    #   - description model selection
+    #   - metadata model selection
+    #   - artwork model selection
     args = parser.parse_args()
 
     if args.batches == 1:
-        print(f"──────────────── COMMENCING WITH SINGLE BATCH ".ljust(gtw(), '─'))
+        banner("COMMENCING WITH SINGLE BATCH", 0)
         generate_tracks(args.n)
     else:
-        print(f"════════════════ STARTING RUN OF {args.batches} BATCHES ".ljust(gtw(), '═'))
+        banner(f"STARTING RUN OF {args.batches} BATCHES", 0)
         batch_generate_tracks(args.batches, args.n)
     
-    print(f"════════════════ GENERATION COMPLETE! 💯 ".ljust(gtw(), '═'))
+    banner("GENERATION COMPLETE! 💯", 0)
