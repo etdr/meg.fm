@@ -19,27 +19,27 @@ with catch_warnings():
 model.set_generation_params(duration=60)
 
 
-def generate_subset(prompts, batchnum=None):
+def generate_subset(descriptions, start_idx):
     print(f"generating music for ids:")
-    for i, p in enumerate(prompts):
-        print(f"{i:03} • {p['uuid']}".rjust(4))
-    return model.generate((p['prompt'] for p in prompts), progress=True)
+    for i, p in enumerate(descriptions):
+        print(f"{i + start_idx:03} • {p['uuid']}".rjust(4))
+    return model.generate((p['description'] for p in descriptions), progress=True)
 
 
 # TODO: Add better index printing
 
-def generate_music(prompts, batchnum=None):
+def generate_music(descriptions):
     # doing five at a time so we don't run out of memory
     wavsets = [
-        generate_subset(ps, batchnum)
-        for ps
-        in [prompts[i:i + SUBSET_SIZE]
+        generate_subset(ps, start_idx)
+        for start_idx, ps
+        in [(i, descriptions[i:i + SUBSET_SIZE])
             for i
-            in range(0, len(prompts), SUBSET_SIZE)]
+            in range(0, len(descriptions), SUBSET_SIZE)]
     ]
     wavs = [w for ws in wavsets for w in ws]
-    music = zip((p['uuid'] for p in prompts), wavs)
-    print(f"converting {len(prompts)} wavs to opus")
+    music = zip((p['uuid'] for p in descriptions), wavs)
+    print(f"converting {len(descriptions)} wavs to opus")
     for selection in music:
         filename = f"{CONTENT_DIR}/music/{selection[0]}"
         # print(f'writing wav file for selection {selection[0]}')

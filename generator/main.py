@@ -5,9 +5,13 @@ from argparse import ArgumentParser
 from dotenv import dotenv_values
 from ruamel.yaml import YAML
 
-from descriptions import get_prompts, SYSPROMPT_VERSION as PROMPT_SYSP_VER
+from utils import gtw
+from descriptions import get_descriptions, \
+    SYSPROMPT_VERSION as PROMPT_SYSP_VER
 from music import generate_music
-from metadata import get_metadata, SYSPROMPT_VERSION as META_SYSP_VER
+from metadata import get_metadata
+    # SYSPROMPT_VERSION as META_SYSP_VER
+    # MODEL as METADATA_MODEL
 from artwork import get_artwork, ARTSOURCE
 
 config = dotenv_values()
@@ -17,31 +21,31 @@ yaml = YAML()
 yaml.indent(mapping=2, sequence=4, offset=2)
 
 
-def generate_tracks(n, batchnum=None):
+def generate_tracks(n):
     timestamp = datetime.now().isoformat()
     print(f"starting generation of {n} objects at {timestamp}")
 
-    prompts_list = get_prompts(n)
+    descs_list = get_descriptions(n)
 
     selections = [
         {
             'uuid': str(uuid4()),
-            'prompt': p,
+            'description': d,
             'created': timestamp,
             'sysprompt_versions': {
-                'prompt': PROMPT_SYSP_VER,
-                'metadata': META_SYSP_VER,
+                'prompt': PROMPT_SYSP_VER
+                # 'metadata': META_SYSP_VER,
                 # 'artwork': ART_SYSP_VER
             },
             'artwork': {
                 'source': ARTSOURCE
             }
         }
-        for p
-        in prompts_list
+        for d
+        in descs_list
     ]
 
-    generate_music(selections, batchnum)
+    generate_music(selections)
     get_metadata(selections)
     get_artwork(selections)
 
@@ -53,7 +57,7 @@ def generate_tracks(n, batchnum=None):
 
 def batch_generate_tracks(batches, batch_size):
     for i in range(batches):
-        print(f"──────────────── COMMENCING WITH BATCH {i} OF {batches} ".ljust(80, '─'))
+        print(f"──────────────── COMMENCING WITH BATCH {i + 1} OF {batches} ".ljust(gtw(), '─'))
         generate_tracks(batch_size)
 
 
@@ -65,10 +69,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.batches == 1:
-        print(f"──────────────── COMMENCING WITH SINGLE BATCH ".ljust(80, '─'))
+        print(f"──────────────── COMMENCING WITH SINGLE BATCH ".ljust(gtw(), '─'))
         generate_tracks(args.n)
     else:
-        print(f"════════════════ STARTING RUN OF {args.batches} BATCHES ".ljust(80, '═'))
+        print(f"════════════════ STARTING RUN OF {args.batches} BATCHES ".ljust(gtw(), '═'))
         batch_generate_tracks(args.batches, args.n)
     
-    print(f"════════════════ GENERATION COMPLETE! 💯 ".ljust(80, '═'))
+    print(f"════════════════ GENERATION COMPLETE! 💯 ".ljust(gtw(), '═'))

@@ -5,8 +5,22 @@ import openai
 from openai import ChatCompletion
 
 SYSPROMPT_VERSION = '2023-10-15'
+MODEL = 'gpt-4'
 
 config = dotenv_values()
+
+
+def get_descriptions(n):
+    match MODEL:
+        case 'gpt-4':
+            return get_descriptions_gpt4(n)
+        case 'llama2':
+            raise NotImplementedError()
+        case _:
+            raise ValueError("Descriptions MODEL is not correctly specified")
+
+
+
 openai.organization = config['OPENAI_ORG']
 openai.api_key = config['OPENAI_KEY']
 
@@ -29,7 +43,7 @@ generate_music_function = {
     }
 }
 
-with open(f'systemprompts/descriptions/systemprompt_{SYSPROMPT_VERSION}.txt', 'rt') as f:
+with open(f'systemprompts/descriptions/systemprompt_gpt-4_{SYSPROMPT_VERSION}.txt', 'rt') as f:
     systemprompt = f.read()
 
 def get_messages(n):
@@ -44,10 +58,8 @@ def get_messages(n):
         }
     ]
 
-
-
-def get_prompts(n):
-    print(f"generating {n} descriptions")
+def get_descriptions_gpt4(n):
+    print(f"generating {n} descriptions...  ", end='')
     results = ChatCompletion.create(
         model="gpt-4",
         messages=get_messages(n),
@@ -55,7 +67,7 @@ def get_prompts(n):
         functions=[generate_music_function]
     )
     arguments = results['choices'][0]['message']['function_call']['arguments']
-    prompts = loads(arguments)['prompt']
-    print(f"generated {len(prompts)} descriptions")
-    return prompts
+    descriptions = loads(arguments)['prompt']
+    print(f"generated {len(descriptions)} descriptions")
+    return descriptions
 

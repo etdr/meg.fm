@@ -4,7 +4,8 @@ from dotenv import dotenv_values
 import openai
 from openai import ChatCompletion
 
-SYSPROMPT_VERSION = '2023-10-15'
+
+SYSPROMPT_VERSION = "2023-10-15"
 
 config = dotenv_values()
 CONTENT_DIR = config['CONTENT_DIR']
@@ -43,11 +44,11 @@ generate_metadata_function = {
     }
 }
 
-with open(f'systemprompts/metadata/systemprompt_{SYSPROMPT_VERSION}.txt', 'rt') as f:
+with open(f'systemprompts/metadata/systemprompt_gpt-4_{SYSPROMPT_VERSION}.txt', 'rt') as f:
     systemprompt = f.read()
 
-def get_messages(prompts):
-    prompts_str = '\n'.join(map(lambda p: f"- {p}", prompts))
+def get_messages(descriptions):
+    descs_str = '\n'.join(map(lambda p: f"- {p}", descriptions))
     return [
         {
             "role": "system",
@@ -55,16 +56,15 @@ def get_messages(prompts):
         },
         {
             "role": "user",
-            "content": f"Please generate {len(prompts)} sets of artist/title/year metadata for the given descriptions: \n{prompts_str}"
+            "content": f"Please generate {len(descriptions)} sets of artist/title/year metadata for the given descriptions: \n{descs_str}"
         }
     ]
 
-
-def get_metadata(selections):
+def get_metadata_gpt4(selections):
     print(f"generating metadata for {len(selections)} selections")
     results = ChatCompletion.create(
         model="gpt-4",
-        messages=get_messages([s['prompt'] for s in selections]),
+        messages=get_messages([s['description'] for s in selections]),
         function_call={"name": "write_metadata"},
         functions=[generate_metadata_function]
     )
@@ -72,3 +72,6 @@ def get_metadata(selections):
     metadata = loads(arguments)['metadata']
     for s, m in zip(selections, metadata):
         s['metadata'] = m
+
+
+

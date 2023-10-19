@@ -1,23 +1,38 @@
 
 from base64 import b64decode
+from io import BytesIO
+from os import devnull
+from contextlib import redirect_stdout
 from dotenv import dotenv_values
-import openai
-from openai import Image, InvalidRequestError
 
-ARTSOURCE = 'openai'
+
+ARTSOURCE = "sdxl"
 
 config = dotenv_values()
 CONTENT_DIR = config['CONTENT_DIR']
-openai.organization = config['OPENAI_ORG']
-openai.api_key = config['OPENAI_KEY']
 
 
 def get_artwork(selections):
+    match ARTSOURCE:
+        case 'openai':
+            get_artwork_openai(selections)
+        case 'sdxl':
+            get_artwork_sdxl(selections)
+        case _:
+            raise ValueError("ARTSOURCE is not correctly specified")
+
+
+def get_artwork_openai(selections):
+    import openai
+    from openai import Image, InvalidRequestError
+    openai.organization = config['OPENAI_ORG']
+    openai.api_key = config['OPENAI_KEY']
+
     for s in selections:
         print(f"creating image for {s['uuid']}...  ", end='')
         try:
             response = Image.create(
-                prompt=f"Album art for the song \"{s['metadata']['title']}\", by the artist {s['metadata']['artist']}, from the year {s['metadata']['year']}. Avoid text! The music sounds like this: {s['prompt']}",
+                prompt=f"Album art for the song \"{s['metadata']['title']}\", by the artist {s['metadata']['artist']}, from the year {s['metadata']['year']}. Avoid text! The music sounds like this: {s['description']}",
                 n=1,
                 size='1024x1024',
                 response_format='b64_json'
@@ -34,3 +49,66 @@ def get_artwork(selections):
         with open(f"{CONTENT_DIR}/artwork/{s['uuid']}.png", 'wb') as f:
             f.write(image_data)
         print("✔")
+
+
+
+def get_artwork_sdxl(selections):
+    # from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline
+    # pipeline = StableDiffusionXLPipeline.from_pretrained(
+    #     "stabilityai/stable-diffusion-xl-base-1.0").to("cuda")
+    # refiner = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+    #     "stabilityai/stable-diffusion-xl-refiner-1.0").to("cuda")
+
+    from torch import float16
+    from diffusers import DiffusionPipeline
+
+    # with open(devnull, 'w') as fnull, redirect_stdout(fnull):
+    base = DiffusionPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-xl-base-1.0",
+        torch_dtype=float16,
+        variant='fp16',
+        use_safetensors=True
+    ).to("cuda")
+    base.set_progress_bar_config(leave=False)
+    refiner = DiffusionPipeline.from_pretrained(
+        "stabilityai/stable-diffusion-xl-refiner-1.0",
+        text_encoder_2=base.text_encoder_2,
+        vae=base.vae,
+        torch_dtype=float16,
+        variant='fp16',
+        use_safetensors=True
+    ).to("cuda")
+    refiner.set_progress_bar_config(leave=False)
+    
+    for s in selections:
+        print(f"creating image for {s['uuid']}...  ", end='')
+        prompt = f"Album art for the song \"{s['metadata']['title']}\", by the artist {s['metadata']['artist']}, from the year {s['metadata']['year']}, the music sounds like {s['description']}"
+        with open(devnull, 'w') as fnull, redirect_stdout(fnull):
+            image = base(
+                prompt=prompt,
+                num_inference_steps=50,
+                denoising_end=0.8,
+                output_type='latent'
+            ).images
+            image = refiner(
+                prompt=prompt,
+                num_inference_steps=50,
+                denoising_start=0.8,
+                image=image
+            ).images[0]
+
+        image_bytes = BytesIO()
+        image.save(image_bytes, format='png')
+        print(f"writing {image_bytes.tell() / (1024 ** 2):<3.3}MB...  ", end='')
+        image_bytes.seek(0)
+        with open(f"{CONTENT_DIR}/artwork/{s['uuid']}.png", 'wb') as f:
+            f.write(image_bytes.read())
+        print("✔")
+
+    
+    
+
+
+
+
+    
