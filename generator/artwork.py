@@ -81,7 +81,7 @@ def get_artwork_sdxl(selections):
     refiner.set_progress_bar_config(leave=False)
     
     for s in selections:
-        print(f"creating image for {s['uuid']}...  ", end='')
+        print(f"creating image for {s['uuid']}...  ", end='', flush=True)
         prompt = f"Album art for the song \"{s['metadata']['title']}\", by the artist {s['metadata']['artist']}, from the year {s['metadata']['year']}, the music sounds like {s['description']}"
         with open(devnull, 'w') as fnull, redirect_stdout(fnull):
             image = base(
@@ -99,7 +99,7 @@ def get_artwork_sdxl(selections):
 
         image_bytes = BytesIO()
         image.save(image_bytes, format='png')
-        print(f"writing {image_bytes.tell() / (1024 ** 2):<3.3}MB...  ", end='')
+        print(f"writing {image_bytes.tell() / (1024 ** 2):<3.3}MB...  ", end='', flush=True)
         image_bytes.seek(0)
         with open(f"{CONTENT_DIR}/artwork/{s['uuid']}.png", 'wb') as f:
             f.write(image_bytes.read())

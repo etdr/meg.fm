@@ -1,6 +1,7 @@
 
 from os import get_terminal_size
 from emoji import emoji_count
+from halo import Halo
 
 
 # get terminal width
@@ -19,3 +20,8 @@ def banner(msg, level=1, msgstart=16):
     banner_start = f"{fillchar * msgstart} {msg.upper()} "
     print(banner_start.ljust(tw, fillchar))
 
+def printline(level=1):
+    print(banner_chars[level] * gtw())
+
+def halo(msg):
+    pass

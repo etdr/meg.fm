@@ -1,8 +1,10 @@
 
-from json import loads
+from json import loads, JSONDecodeError
 from dotenv import dotenv_values
+from halo import Halo
 import openai
 from openai import ChatCompletion
+from openai.error import APIError
 
 SYSPROMPT_VERSION = '2023-10-15'
 MODEL = 'gpt-4'
@@ -59,15 +61,24 @@ def get_messages(n):
     ]
 
 def get_descriptions_gpt4(n):
-    print(f"generating {n} descriptions...  ", end='')
-    results = ChatCompletion.create(
-        model="gpt-4",
-        messages=get_messages(n),
-        function_call={"name": "generate_music"},
-        functions=[generate_music_function]
-    )
-    arguments = results['choices'][0]['message']['function_call']['arguments']
-    descriptions = loads(arguments)['prompt']
+    # print(f"generating {n} descriptions...  ")
+    with Halo(f"generating {n} descriptions"):
+        for i in range(3):
+            try:
+                results = ChatCompletion.create(
+                    model="gpt-4",
+                    messages=get_messages(n),
+                    function_call={"name": "generate_music"},
+                    functions=[generate_music_function]
+                )
+                arguments = results['choices'][0]['message']['function_call']['arguments']
+                descriptions = loads(arguments)['prompt']
+                break
+            except (APIError, JSONDecodeError) as e:
+                if i < 2:
+                    print(f"Error: {e.msg}. Retrying...")
+                else:
+                    raise APIError("Max retries reached")
     print(f"generated {len(descriptions)} descriptions")
     return descriptions
 

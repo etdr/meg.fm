@@ -1,8 +1,8 @@
 
-from json import loads
+from json import loads, JSONDecodeError
 from dotenv import dotenv_values
 import openai
-from openai import ChatCompletion
+from openai import ChatCompletion, APIError
 
 
 SYSPROMPT_VERSION = "2023-10-15"
@@ -61,16 +61,22 @@ def get_messages(descriptions):
     ]
 
 def get_metadata_gpt4(selections):
-    print(f"generating metadata for {len(selections)} selections")
-    results = ChatCompletion.create(
-        model="gpt-4",
-        messages=get_messages([s['description'] for s in selections]),
-        function_call={"name": "write_metadata"},
-        functions=[generate_metadata_function]
-    )
-    arguments = results['choices'][0]['message']['function_call']['arguments']
-        # .replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
-    metadata = loads(arguments)['metadata']
+    for i in range(3):
+        try:
+            results = ChatCompletion.create(
+                model="gpt-4",
+                messages=get_messages([s['description'] for s in selections]),
+                function_call={"name": "write_metadata"},
+                functions=[generate_metadata_function]
+            )
+            arguments = results['choices'][0]['message']['function_call']['arguments']
+                # .replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+            metadata = loads(arguments)['metadata']
+        except (APIError, JSONDecodeError, KeyError) as e:
+            if i < 2:
+                    print(f"Error: {e.msg}. Retrying...")
+            else:
+                raise e("Max retries reached")
     for s, m in zip(selections, metadata):
         s['metadata'] = m
 
