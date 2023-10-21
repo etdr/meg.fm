@@ -2,6 +2,7 @@
 from base64 import b64decode
 from io import BytesIO
 from os import devnull
+from subprocess import run, DEVNULL
 from contextlib import redirect_stdout
 from dotenv import dotenv_values
 
@@ -46,9 +47,7 @@ def get_artwork_openai(selections):
             )
         image_data = b64decode(response['data'][0]['b64_json'])
         print(f"writing {len(image_data) / (1024 ** 2):<3.3}MB...  ", end='')
-        with open(f"{CONTENT_DIR}/artwork/{s['uuid']}.png", 'wb') as f:
-            f.write(image_data)
-        print("✔")
+        write_files(s['uuid'], image_data)
 
 
 
@@ -101,13 +100,19 @@ def get_artwork_sdxl(selections):
         image.save(image_bytes, format='png')
         print(f"writing {image_bytes.tell() / (1024 ** 2):<3.3}MB...  ", end='', flush=True)
         image_bytes.seek(0)
-        with open(f"{CONTENT_DIR}/artwork/{s['uuid']}.png", 'wb') as f:
-            f.write(image_bytes.read())
-        print("✔")
-
-    
+        write_files(s['uuid'], image_bytes.read())
     
 
+def write_files(uuid, data):
+    with open(f"{CONTENT_DIR}/artwork/png/{uuid}.png", 'wb') as f:
+        f.write(data)
+    run([
+        "cwebp",
+        "-q", "80",
+        f"{CONTENT_DIR}/artwork/png/{uuid}.png",
+        "-o", f"{CONTENT_DIR}/artwork/webp/{uuid}.webp"
+    ], stdout=DEVNULL, stderr=DEVNULL)
+    print("✔")
 
 
 

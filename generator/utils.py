@@ -1,5 +1,6 @@
 
 from os import get_terminal_size
+from functools import wraps
 from emoji import emoji_count
 from halo import Halo
 
@@ -24,4 +25,7 @@ def printline(level=1):
     print(banner_chars[level] * gtw())
 
 def halo(msg):
-    pass
+    def dec(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            return f(*args, **kwargs)

@@ -43,4 +43,3 @@ def start_scheduler():
 # if __name__ == '__main__':
 socketio.start_background_task(start_scheduler)
 socketio.run(app)
-    
