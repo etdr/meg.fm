@@ -75,6 +75,7 @@ if __name__ == "__main__":
     parser.add_argument("n", type=int, help="number of tracks to generate per batch")
     parser.add_argument("-b", "--batches", type=int, help="number of batches", default=1)
     parser.add_argument("-u", "--until", type=str, help="time to generate until", default='')
+    parser.add_argument("-i", "--indefinite", action="store_true", help="keep generating until manual exit")
     # add arguments (when applicable) for:
     #   - description model selection
     #   - metadata model selection
@@ -96,7 +97,13 @@ if __name__ == "__main__":
     key_listener = keyboard.Listener(on_press=stop_after_this)
     key_listener.start()
 
-    if args.until:
+    if args.indefinite:
+        num_generated = 0
+        banner("GENERATING INDEFINITELY", 0)
+        while not exit_generation:
+            banner("ANOTHER ONE")
+            num_generated += generate_tracks(args.n)
+    elif args.until:
         num_generated = 0
         banner("STARTING UNTIL RUN", 0)
         while not exit_generation and datetime.now() < time_until:
