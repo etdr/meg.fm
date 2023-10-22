@@ -81,7 +81,10 @@ def get_artwork_sdxl(selections):
     
     for s in selections:
         print(f"creating image for {s['uuid']}...  ", end='', flush=True)
-        prompt = f"Album art for the song \"{s['metadata']['title']}\", by the artist {s['metadata']['artist']}, from the year {s['metadata']['year']}, the music sounds like {s['description']}"
+        try:
+            prompt = f"Album art for the song \"{s['metadata']['title']}\", by the artist {s['metadata']['artist']}, from the year {s['metadata']['year']}, the music sounds like {s['description']}"
+        except KeyError:
+            continue
         with open(devnull, 'w') as fnull, redirect_stdout(fnull):
             image = base(
                 prompt=prompt,
@@ -95,7 +98,7 @@ def get_artwork_sdxl(selections):
                 denoising_start=0.8,
                 image=image
             ).images[0]
-
+    
         image_bytes = BytesIO()
         image.save(image_bytes, format='png')
         print(f"writing {image_bytes.tell() / (1024 ** 2):<3.3}MB...  ", end='', flush=True)
