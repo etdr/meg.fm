@@ -10,22 +10,8 @@ SYSPROMPT_VERSION = '2023-10-15'
 MODEL = 'gpt-4'
 
 config = dotenv_values()
-
-
-def get_descriptions(n):
-	match MODEL:
-		case 'gpt-4':
-			return get_descriptions_gpt4(n)
-		case 'llama2':
-			raise NotImplementedError()
-		case _:
-			raise ValueError("Descriptions MODEL is not correctly specified")
-
-
-
 openai.organization = config['OPENAI_ORG']
 openai.api_key = config['OPENAI_KEY']
-
 
 generate_music_function = {
 	"name": "generate_music",

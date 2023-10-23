@@ -1,7 +1,7 @@
 
 from halo import Halo
 
-MODEL = "gpt-4"
+MODEL = "llama2"
 
 
 def get_metadata(selections):
@@ -11,7 +11,8 @@ def get_metadata(selections):
 				from .gpt4 import get_metadata_gpt4
 				get_metadata_gpt4(selections)
 			case 'llama2':
-				raise NotImplementedError("in progress")
+				from .llama2 import get_metadata_llama2
+				get_metadata_llama2(selections)
 			case _:
 				raise ValueError("Metadata MODEL is not correctly specified")
 	print(f"generated {len(selections)} sets of metadata")

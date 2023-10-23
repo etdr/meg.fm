@@ -8,19 +8,35 @@ from pynput import keyboard
 from ruamel.yaml import YAML
 
 from utils import banner, printline
-from descriptions import get_descriptions, \
-	SYSPROMPT_VERSION as PROMPT_SYSP_VER
+from descriptions import get_descriptions, MODEL as DESC_MODEL
 from music import generate_music
-from metadata import get_metadata
+from metadata import get_metadata, MODEL as METADATA_MODEL
 	# SYSPROMPT_VERSION as META_SYSP_VER
 	# MODEL as METADATA_MODEL
-from artwork import get_artwork, ARTSOURCE
+from artwork import get_artwork, ARTSOURCE as ART_MODEL
 
 config = dotenv_values()
 CONTENT_DIR = config['CONTENT_DIR']
 
 yaml = YAML()
 yaml.indent(mapping=2, sequence=4, offset=2)
+
+def filter_data_incompleteness(selections):
+	def selection_is_ok(s):
+		if 'description' not in s or not s['description'] \
+		  or 'metadata' not in s or not s['metadata'] \
+		  or 'artist' not in s['metadata'] or 'title' not in s['metadata'] \
+		  or 'year' not in s['metadata']:
+			return False
+		return True
+	
+	filtered = [s for s in selections if selection_is_ok(s)]
+	num_filtered = len(selections) - len(filtered)
+	if num_filtered:
+		print(f"filtered {num_filtered} selections with incomplete text data")
+	return filtered
+			
+
 
 
 def generate_tracks(n, batch_num=0):
@@ -35,12 +51,15 @@ def generate_tracks(n, batch_num=0):
 			'description': d,
 			'created': time_start,
 			'sysprompt_versions': {
-				'prompt': PROMPT_SYSP_VER
+				# 'prompt': PROMPT_SYSP_VER
 				# 'metadata': META_SYSP_VER,
 				# 'artwork': ART_SYSP_VER
 			},
-			'artwork': {
-				'source': ARTSOURCE
+			'sources': {
+				'description': DESC_MODEL,
+				'metadata': METADATA_MODEL,
+				'artwork': ART_MODEL,
+				'music': 'audiocraft'
 			}
 		}
 		for d
@@ -48,6 +67,8 @@ def generate_tracks(n, batch_num=0):
 	]
 
 	get_metadata(selections)
+	selections = filter_data_incompleteness(selections)
+
 	get_artwork(selections)
 	generate_music(selections)
 
@@ -129,3 +150,5 @@ if __name__ == "__main__":
 	print(f"TOTAL RUN: generated {num_generated} tracks in {runtime_mins:<4.4} minutes")
 	print(f"roughly {num_generated / runtime_mins:<3.3} tracks per minute")
 	banner("GENERATION COMPLETE! 💯", 0)
+
+

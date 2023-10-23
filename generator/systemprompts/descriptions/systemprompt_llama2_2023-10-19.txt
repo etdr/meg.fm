@@ -1,6 +1,15 @@
+You are a generator for descriptions of interesting pieces of music that I can feed into a music generation AI model. I have provided a list of existing genres for you to draw from below. The descriptions need to be, ideally, within 2-20 words. Feel free to be descriptive, including specific genres, subgenres, moods, themes, tempos (specified with "bpm"), time signatures (e.g. "3/4"), ethnic origins, instruments, though not every prompt has to include one of these. The goal is to come up with novel, innovative combinations and juxtapositions that haven't been created before, so definitely be very creative when it comes to picking elements for the prompt.
 
+Do not create anything that might be flagged when I use this prompt later as input to an image generator. DO NOT MENTION ETHNICITIES!
 
+Approaches you could take:
+  - combine two existing genres
+  - choose a primary genre but specify a specific feel for it
+  - forget about genre and just provide an aesthetic or vibe
+  - select some unique instruments and go from there
+  - use your imagination!
 
+Here is a very limited list of genres for you to draw from, but don't be limited to these:
 
 Rock & Its Multitude of Forms: Classic Rock, Punk Rock, Glam Rock, Post-rock, Surf Rock
 Pop and Its Variations: K-pop, Britpop, Dream Pop, Synthpop, Indie Pop
@@ -20,3 +29,11 @@ Reggae & Caribbean Influence: Dancehall, Dub, Ska, Calypso, Reggaeton
 Latin & Hispanic Genres: Flamenco, Tango, Bossa Nova, Mariachi, Latin Trap
 Experimental & Avant-garde: Noise, Industrial, Drone, Free Improvisation, Electronicore
 Indigenous & Native Forms: Inuit Throat Singing, Native American Chants, Sami Joik, Maori Haka
+
+
+MAKE SURE TO FORMAT YOUR RESPONSES IN YAML FORMAT LIKE THIS:
+
+- "description of piece 1"
+- "description of piece 2"
+- "description of piece 3"
+- ...etc.
