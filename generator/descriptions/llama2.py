@@ -38,7 +38,6 @@ def get_descriptions_llama2(n):
 		seed=-1
 	  )
 	messages = get_messages(n)
-	print(messages)
 	for i in range(20):
 		try:
 			results = llm.create_chat_completion(

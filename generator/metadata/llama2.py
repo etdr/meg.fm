@@ -64,3 +64,10 @@ def get_metadata_llama2(selections):
 	for s, m in zip(selections, groups):
 		# the [0] is a hack for now
 		s['metadata'] = m[0]
+
+
+def test_samples(s_id):
+	with open(f"descriptions/samples/descs{s_id}.yaml", 'rt') as f:
+		samples = yaml.load(f)
+	get_metadata_llama2(samples)
+	return samples
