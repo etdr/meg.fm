@@ -1,18 +1,2 @@
-<script>
-
-  import { io } from 'socket.io-client'
-
-  const socket = io('http://localhost:5000')
-
-  socket.on('connect', () => console.log('connected to websocket'))
-
-  let title = ''
-
-  function changeTitle (newtitle) {
-    title = newtitle
-  }
-
-  socket.on('changetitle', changeTitle)
-</script>
-
-<h1>{title}</h1>
+<h1>Welcome to SvelteKit</h1>
+<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>

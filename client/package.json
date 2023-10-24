@@ -13,8 +13,5 @@
 		"svelte": "^4.0.5",
 		"vite": "^4.4.2"
 	},
-	"type": "module",
-	"dependencies": {
-		"socket.io-client": "^4.7.2"
-	}
+	"type": "module"
 }
