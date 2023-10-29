@@ -10,7 +10,7 @@ use chrono::Local;
 use sha2::{Sha256, Digest};
 
 use axum::{
-	routing::get,
+	routing::{get, post},
 	Router,
 	response::{IntoResponse, Response},
 	extract::ws::{Message, WebSocket, WebSocketUpgrade},
@@ -20,8 +20,13 @@ use futures::{sink::SinkExt, stream::StreamExt, lock};
 use hyper::Client;
 use tokio::sync::{broadcast, RwLock};
 
+use std::sync::Once;
+use dotenv::dotenv;
+
 mod audio;
 mod aws;
+mod update_db;
+mod auth;
 
 type AudioTrack = Vec<i16>;
 
@@ -31,10 +36,15 @@ struct GlobalAudioState {
 	audio_slice: Vec<u8>,
 }
 
+static INIT: Once = Once::new();
 
 
 #[tokio::main]
 async fn main() {
+
+	INIT.call_once(|| {
+		dotenv().ok();
+	});	
 
 	let global_audio_state = Arc::new(RwLock::new(GlobalAudioState {
 		playhead: 0,
@@ -86,7 +96,8 @@ async fn main() {
 	let tx_for_route = tx.clone();
 	let app = Router::new()
 		.route("/", get(|| async { "hello there" }))
-		.route("/audio", get(|ws| ws_handler(ws, tx_for_route)));
+		.route("/audio", get(|ws| ws_handler(ws, tx_for_route)))
+		.route("/updatedb", post(update_db::update_db));
 
 	let addr = "0.0.0.0:30303".parse().unwrap();
 	axum::Server::bind(&addr)

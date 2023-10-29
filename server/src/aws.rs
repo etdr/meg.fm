@@ -1,11 +1,13 @@
 
-use std::sync::Once;
-use dotenv::dotenv;
 
-static INIT: Once = Once::new();
+use aws_sdk_s3 as s3;
 
-pub fn get_track_materials() {
-	INIT.call_once(|| {
-		dotenv().ok();
-	})
+
+
+pub async fn get_track_materials() {
+
+	let awsconfig = aws_config::load_from_env().await;
+	let client = s3::Client::new(&awsconfig);
+
+	client.list_objects_v2().bucket("meg.fm");
 }
