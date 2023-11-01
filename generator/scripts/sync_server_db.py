@@ -5,22 +5,21 @@ from dotenv import dotenv_values
 
 config = dotenv_values()
 
-
 user = config["SERVER_USERNAME"]
 pw = config["SERVER_PASSWORD"]
 
-# get uuid list
+def post_uuids(uuids):
 
-payload = json.dumps({"uuids": []})
+	payload = json.dumps({"uuids": uuids})
 
-auth = (user, pw)
+	auth = (user, pw)
 
-response = requests.post(
-	"",
-	data=payload,
-	auth=auth,
-	headers={"Content-Type": "application/json"}
-)
+	response = requests.post(
+		"",
+		data=payload,
+		auth=auth,
+		headers={"Content-Type": "application/json"}
+	)
 
-print(f"Status code: {response.status_code}")
-print(f"Response: {response.json()}")
+	print(f"Status code: {response.status_code}")
+	print(f"Response: {response.json()}")
