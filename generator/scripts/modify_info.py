@@ -11,10 +11,20 @@ chdir(f"{CONTENT_DIR}/info")
 filenames = [f for f in listdir() if f.endswith('.yaml')]
 
 for fn in filenames:
-	with open(fn, 'rt') as f:
-		y = yaml.load(f)
+	with open(fn, 'rt', encoding='utf-8') as f:
+		md = yaml.load(f)
 		
 	# modify this line
+	if 'artwork' in md:
+		md.pop('artwork')
+		md['sources'] = {
+			'description': "gpt-4",
+			'metadata': "gpt-4",
+			'artwork': "openai",
+			'music': "audiocraft"
+		}
+	if 'sysprompt_versions' in md:
+		md.pop('sysprompt_versions')
 	
-	with open(fn, 'wt') as f:
-		yaml.dump(y, f)
+	with open(fn, 'wt', encoding='utf-8') as f:
+		yaml.dump(md, f)

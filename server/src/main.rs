@@ -1,6 +1,7 @@
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
+use audio::load_and_decode;
 use bytes::Bytes;
 
 use byteorder::{ByteOrder, LittleEndian};
@@ -18,9 +19,10 @@ use axum::{
 };
 use futures::{sink::SinkExt, stream::StreamExt, lock};
 use hyper::Client;
-use tokio::sync::{broadcast, RwLock};
+use tokio::{sync::{broadcast, RwLock}, time::sleep};
 
 use std::sync::Once;
+use std::time::Instant;
 use dotenv::dotenv;
 
 mod audio;
@@ -28,13 +30,47 @@ mod aws;
 mod update_db;
 mod auth;
 
-type AudioTrack = Vec<i16>;
+pub struct AudioTrack {
+	packets: Vec<Vec<u8>>,
+	packet_duration: u64,
+	track_duration: u64,
+}
 
 struct GlobalAudioState {
-	playhead: usize,
+	track_start_instant: Instant,
 	current_track: AudioTrack,
-	audio_slice: Vec<u8>,
 }
+
+impl GlobalAudioState {
+	fn new() -> GlobalAudioState {
+		GlobalAudioState {
+			track_start_instant: Instant::now(),
+			current_track: load_and_decode().unwrap()
+		}
+	}
+
+	fn current_packet(&self) -> Option<&Vec<u8>> {
+		let elapsed = self.track_start_instant.elapsed().as_millis() as u64;
+		if elapsed >= self.current_track.track_duration {
+			None
+		} else {
+			let packet_index = elapsed / self.current_track.packet_duration;
+			self.current_track.packets.get(packet_index as usize)
+		}
+	}
+
+	async fn load_next_track(&mut self) {
+		self.current_track = load_and_decode().unwrap();
+		self.track_start_instant = Instant::now();
+	}
+
+	fn should_load_next_track(&self) -> bool {
+		let elapsed = self.track_start_instant.elapsed().as_millis() as u64;
+		elapsed >= self.current_track.track_duration
+	}
+}
+
+
 
 static INIT: Once = Once::new();
 
@@ -46,58 +82,28 @@ async fn main() {
 		dotenv().ok();
 	});	
 
-	let global_audio_state = Arc::new(RwLock::new(GlobalAudioState {
-		playhead: 0,
-		current_track: audio::load_and_decode().unwrap(),
-		audio_slice: Vec::new(),
-	}));
+	let global_audio_state = Arc::new(RwLock::new(GlobalAudioState::new()));
 
-	let (tx, _rx) = broadcast::channel(200);
-	let tx_clone = tx.clone();
+	let (tx, _rx) = broadcast::channel::<Vec<u8>>(200);
+	// let tx_clone = tx.clone();
 
-	tokio::spawn(async move {
-		let global_audio_state = Arc::clone(&global_audio_state);
-
-		loop {
-			let mut locked_state = global_audio_state.write().await;
-
-			if should_swap_track(locked_state.playhead, &locked_state.current_track) {
-				locked_state.current_track = audio::load_and_decode().unwrap();
-				locked_state.playhead = 0;
-			}
-
-			let mut next_position = locked_state.playhead + (24000 as f32 * 1000 as f32 / 1000.0) as usize;
-			if next_position > locked_state.current_track.len() {
-				next_position = locked_state.current_track.len();
-			}
-
-			let audio_slice = &locked_state.current_track[locked_state.playhead..next_position];
-
-			let mut byte_buffer = vec![0u8; audio_slice.len() * 2];
-			LittleEndian::write_i16_into(audio_slice, &mut byte_buffer);
-			// let audio_chunk = Bytes::copy_from_slice(&byte_buffer);
-
-			let mut hasher = Sha256::new();
-			hasher.update(&byte_buffer);
-			let hash_result = hasher.finalize();
-			locked_state.audio_slice = byte_buffer;
-
-			println!("broadcasting chunk {:x} at {}", hash_result, Local::now().format("%H:%M:%S%.3f"));
-			if let Err(e) = tx_clone.send(locked_state.audio_slice.clone()) {
-				panic!("{}", e);
-			}
-
-			locked_state.playhead = next_position;
-
-			tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-		}
+	let gas_dj_clone = Arc::clone(&global_audio_state);
+	tokio::spawn(async {
+		dj_loop(gas_dj_clone).await;
 	});
+
+	let gas_tx_clone = Arc::clone(&global_audio_state);
+	let tx_sbl = tx.clone();
+	tokio::spawn(async {
+		server_broadcast_loop(gas_tx_clone, tx_sbl).await;
+	});
+
 	
 	let tx_for_route = tx.clone();
 	let app = Router::new()
 		.route("/", get(|| async { "hello there" }))
-		.route("/audio", get(|ws| ws_handler(ws, tx_for_route)))
-		.route("/updatedb", post(update_db::update_db));
+		.route("/audio", get(|ws| ws_handler(ws, tx_for_route)));
+		// .route("/updatedb", post(update_db::update_db));
 
 	let addr = "0.0.0.0:30303".parse().unwrap();
 	axum::Server::bind(&addr)
@@ -135,16 +141,49 @@ async fn handle_websocket(socket: WebSocket, tx: broadcast::Sender<Vec<u8>>) {
 	});
 
 	while let Ok(audio_chunk) = rx.recv().await {
-		println!("sending chunk");
+		// println!("sending chunk");
 		if let Err(_) = ws_tx.send(Message::Binary(audio_chunk)).await {
 			break;
 		}
 	}
 }
 
-fn should_swap_track(playhead: usize, current_track: &AudioTrack) -> bool {
-	if playhead >= 60 * 24000 {
-		return true;
+
+async fn server_broadcast_loop(state: Arc<RwLock<GlobalAudioState>>, tx: broadcast::Sender<Vec<u8>>) {
+	loop {
+		let audio_packet;
+		{
+			let read_state = state.read().await;
+			audio_packet = read_state.current_packet().cloned();
+		}
+
+		if let Some(packet) = audio_packet {
+			if let Err(e) = tx.send(packet) {
+				eprintln!("Error broadcasting packet: {:?}", e);
+			} else {
+				// println!("Sent packet");
+			}
+		} else {
+			eprintln!("No packet to broadcast");
+		}
+
+		tokio::time::sleep(Duration::from_millis(20)).await;
 	}
-	false
+}
+
+async fn dj_loop(state: Arc<RwLock<GlobalAudioState>>) {
+	loop {
+		{
+			let read_state = state.read().await;
+			if read_state.should_load_next_track() {
+				println!("switching track");
+				drop(read_state);
+
+				let mut write_state = state.write().await;
+				write_state.load_next_track().await;
+			}
+		}
+
+		sleep(Duration::from_millis(100)).await;
+	}
 }

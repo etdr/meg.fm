@@ -1,7 +1,7 @@
 
 from halo import Halo
 
-MODEL = "llama2"
+MODEL = "gpt-4"
 
 
 def get_metadata(selections):

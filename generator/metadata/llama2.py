@@ -8,6 +8,7 @@ from llama_cpp import Llama
 SYSPROMPT_VERSION = "2023-10-19"
 LLAMA_VARIANT = "13b-chat"
 LLAMA_TEMP = 1.8
+LLAMA_MAX_TOKENS = 3000
 
 yaml = YAML()
 yaml.indent(mapping=2, sequence=4, offset=2)
@@ -44,7 +45,7 @@ def get_metadata_llama2(selections):
 			results = llm.create_chat_completion(
 				messages=get_messages([s['description'] for s in selections]),
 				temperature=LLAMA_TEMP,
-				max_tokens=2000
+				max_tokens=LLAMA_MAX_TOKENS
 			)
 	
 			raw_descs = results['choices'][0]['message']['content']

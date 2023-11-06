@@ -4,7 +4,7 @@ from dotenv import dotenv_values
 import openai
 from openai import ChatCompletion, APIError
 
-
+OPENAI_MODEL = "gpt-4-1106-preview"
 SYSPROMPT_VERSION = "2023-10-15"
 
 config = dotenv_values()
@@ -64,7 +64,7 @@ def get_metadata_gpt4(selections):
 	for i in range(3):
 		try:
 			results = ChatCompletion.create(
-				model="gpt-4",
+				model=OPENAI_MODEL,
 				messages=get_messages([s['description'] for s in selections]),
 				function_call={"name": "write_metadata"},
 				functions=[generate_metadata_function]

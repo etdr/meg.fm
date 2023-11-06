@@ -6,59 +6,46 @@ use std::error::Error;
 use opus::{Decoder, Channels};
 use ogg::{PacketReader, Packet};
 
+use crate::AudioTrack;
+
 
 const TEST_OPUS_PATH: &'static str = "/home/winfield/projects/meg.fm/content/music/ab40037e-41c0-4b94-b349-93286ab6d014.opus";
 
-pub fn load_and_decode() -> Result<Vec<i16>, Box<dyn std::error::Error>> {
+pub fn load_and_decode() -> Result<AudioTrack, Box<dyn std::error::Error>> {
 
 	let file = File::open(TEST_OPUS_PATH)?;
-	// let mut opus_data = Vec::new();
-	// file.read_to_end(&mut opus_data)?;
+	
 	let mut pr = PacketReader::new(file);
 
-	let mut decoder = Decoder::new(24000, Channels::Mono)?;
-	let mut output_buffer: Vec<i16> = vec![0; 500];
+	let mut opus_packets: Vec<Vec<u8>> = Vec::new();
 
-	loop {
-		match pr.read_packet() {
-			Ok(Some(pkt)) => {
-				let mut pcm = vec![0i16; 5760];
-				if let Ok(samples) = decoder.decode(&pkt.data, &mut pcm, false) {
-					output_buffer.extend_from_slice(&pcm[0..samples]);
-				}
-			}
-			Ok(None) => {
-				break;
-			}
-			Err(e) => {
-				eprintln!("Error decoding: {:?}", e);
-				break;
-			}
-		}
+	while let Ok(Some(packet)) = pr.read_packet() {
+		let aligned_packet = ensure_mult_of_4(packet.data);
+		opus_packets.push(aligned_packet);
 	}
 
-	// while offset < opus_data.len() {
-	// 	let packet_size = get_next_packet_size(&opus_data[offset..])?;
+	// let mut decoder = Decoder::new(24000, Channels::Mono)?;
+	// let mut output_buffer: Vec<i16> = vec![0; 500];
 
-	// 	let packet_data = &opus_data[offset..(offset + packet_size)];
-
-	// 	let mut decoded_buffer: Vec<i16> = vec![0; packet_size * 2];
-
-	// 	match decoder.decode(packet_data, &mut decoded_buffer, false) {
-	// 		Ok(samples) => {
-	// 			output_buffer.extend_from_slice(&decoded_buffer[0..samples]);
-	// 		},
-	// 		Err(err) => {
-	// 			eprintln!("Failed to decode packet: {:?}", err);
+	// loop {
+	// 	match pr.read_packet() {
+	// 		Ok(Some(pkt)) => {
+	// 			let mut pcm = vec![0i16; 5760];
+	// 			if let Ok(samples) = decoder.decode(&pkt.data, &mut pcm, false) {
+	// 				output_buffer.extend_from_slice(&pcm[0..samples]);
+	// 			}
+	// 		}
+	// 		Ok(None) => {
+	// 			break;
+	// 		}
+	// 		Err(e) => {
+	// 			eprintln!("Error decoding: {:?}", e);
+	// 			break;
 	// 		}
 	// 	}
+	// }
 
-	
-
-	// let output_slice = &mut decoded_buffer[..];
-	// decoder.decode(&opus_data, output_slice, false)?;
-
-	Ok(output_buffer)
+	Ok(AudioTrack { packets: opus_packets, packet_duration: 20, track_duration: 60000 })
 }
 
 // fn get_next_packet_size(data: &[u8]) -> Result<usize, Box<dyn Error>> {
@@ -67,3 +54,10 @@ pub fn load_and_decode() -> Result<Vec<i16>, Box<dyn std::error::Error>> {
 // }
 
 
+fn ensure_mult_of_4(mut packet: Vec<u8>) -> Vec<u8> {
+	let extra_bytes = packet.len() % 4;
+	if extra_bytes != 0 {
+		packet.extend(vec![0; 4 - extra_bytes]);
+	}
+	packet
+}

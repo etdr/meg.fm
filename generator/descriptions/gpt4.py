@@ -6,8 +6,8 @@ import openai
 from openai import ChatCompletion
 from openai.error import APIError
 
+OPENAI_MODEL = "gpt-4-1106-preview"
 SYSPROMPT_VERSION = '2023-10-15'
-MODEL = 'gpt-4'
 
 config = dotenv_values()
 openai.organization = config['OPENAI_ORG']
@@ -52,7 +52,7 @@ def get_descriptions_gpt4(n):
 		for i in range(3):
 			try:
 				results = ChatCompletion.create(
-					model="gpt-4",
+					model=OPENAI_MODEL,
 					messages=get_messages(n),
 					function_call={"name": "generate_music"},
 					functions=[generate_music_function]

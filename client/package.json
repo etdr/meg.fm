@@ -9,13 +9,14 @@
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-vercel": "^3.0.3",
-		"@sveltejs/kit": "^1.20.4",
+		"@sveltejs/kit": "^1.27.3",
 		"lightningcss": "^1.22.0",
-		"svelte": "^4.0.5",
-		"vite": "^4.4.2"
+		"svelte": "^4.2.2",
+		"vite": "^4.5.0"
 	},
 	"type": "module",
 	"dependencies": {
-		"@vercel/analytics": "^1.1.1"
+		"@vercel/analytics": "^1.1.1",
+		"opus-decoder": "^0.7.3"
 	}
 }

@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
+import os
+import signal
 from uuid import uuid4
 from datetime import datetime
 from argparse import ArgumentParser
+from time import sleep
 from dotenv import dotenv_values
-from pynput import keyboard
+# from pynput import keyboard
 from ruamel.yaml import YAML
 
 from utils import banner, printline
@@ -14,6 +17,8 @@ from metadata import get_metadata, MODEL as METADATA_MODEL
 	# SYSPROMPT_VERSION as META_SYSP_VER
 	# MODEL as METADATA_MODEL
 from artwork import get_artwork, ARTSOURCE as ART_MODEL
+
+PIDFILE = "/tmp/meg.fm-generator.pid"
 
 config = dotenv_values()
 CONTENT_DIR = config['CONTENT_DIR']
@@ -37,8 +42,6 @@ def filter_data_incompleteness(selections):
 	return filtered
 			
 
-
-
 def generate_tracks(n, batch_num=0):
 	time_start = datetime.now()
 	print(f"starting generation of {n} objects at {time_start.isoformat()}")
@@ -50,11 +53,6 @@ def generate_tracks(n, batch_num=0):
 			'uuid': str(uuid4()),
 			'description': d,
 			'created': time_start,
-			'sysprompt_versions': {
-				# 'prompt': PROMPT_SYSP_VER
-				# 'metadata': META_SYSP_VER,
-				# 'artwork': ART_SYSP_VER
-			},
 			'sources': {
 				'description': DESC_MODEL,
 				'metadata': METADATA_MODEL,
@@ -92,6 +90,10 @@ def batch_generate_tracks(batches, batch_size):
 
 
 if __name__ == "__main__":
+	pid = str(os.getpid())
+	with open(PIDFILE, 'w') as pidf:
+		pidf.write(pid)
+
 	parser = ArgumentParser(description="generates batches of hypothetical music and associated data")
 	parser.add_argument("n", type=int, help="number of tracks to generate per batch")
 	parser.add_argument("-b", "--batches", type=int, help="number of batches", default=1)
@@ -110,13 +112,19 @@ if __name__ == "__main__":
 	time_start = datetime.now()
 
 	exit_generation = False
-	def stop_after_this(k):
+	def handle_sigusr1(signum, frame):
 		global exit_generation
-		if k == keyboard.Key.esc:
-			exit_generation = True
-			print("exiting after current batch")
-	key_listener = keyboard.Listener(on_press=stop_after_this)
-	key_listener.start()
+		print("Exiting after this batch...")
+		exit_generation = True
+	signal.signal(signal.SIGUSR1, handle_sigusr1)
+
+	# def stop_after_this(k):
+	# 	global exit_generation
+	# 	if k == keyboard.Key.esc:
+	# 		exit_generation = True
+	# 		print("exiting after current batch")
+	# key_listener = keyboard.Listener(on_press=stop_after_this)
+	# key_listener.start()
 
 	if args.indefinite:
 		num_generated = 0
@@ -141,7 +149,7 @@ if __name__ == "__main__":
 				num_generated = batch_generate_tracks(args.batches, args.n)
 				break
 	
-	key_listener.stop()
+	# key_listener.stop()
 	time_end = datetime.now()
 	runtime_mins = (time_end - time_start).seconds / 60
 	printline(1)
@@ -150,5 +158,7 @@ if __name__ == "__main__":
 	print(f"TOTAL RUN: generated {num_generated} tracks in {runtime_mins:<4.4} minutes")
 	print(f"roughly {num_generated / runtime_mins:<3.3} tracks per minute")
 	banner("GENERATION COMPLETE! 💯", 0)
+
+	os.unlink(PIDFILE)
 
 

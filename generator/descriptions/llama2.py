@@ -8,6 +8,7 @@ from llama_cpp import Llama
 SYSPROMPT_VERSION = "2023-10-19"
 LLAMA_VARIANT = "13b-chat"
 LLAMA_TEMP = 1.8
+LLAMA_MAX_TOKENS = 3000
 
 yaml = YAML()
 yaml.indent(mapping=2, sequence=4, offset=2)
@@ -15,7 +16,7 @@ yaml.indent(mapping=2, sequence=4, offset=2)
 config = dotenv_values()
 LLAMA_MODEL_PATH = f"{config['LLAMA_MODELS_DIR']}/llama-2-{LLAMA_VARIANT}/quant-Q8_0.gguf"
 
-with open(f'systemprompts/descriptions/systemprompt_llama2_{SYSPROMPT_VERSION}.txt', 'rt') as f:
+with open(f'systemprompts/descriptions/systemprompt_llama2_{SYSPROMPT_VERSION}.txt', 'rt', encoding='utf-8') as f:
 	systemprompt = f.read()
 
 def get_messages(n):
@@ -43,7 +44,7 @@ def get_descriptions_llama2(n):
 			results = llm.create_chat_completion(
 				messages=messages,
 				temperature=LLAMA_TEMP,
-				max_tokens=2000
+				max_tokens=LLAMA_MAX_TOKENS
 			)
 
 			raw_descs = results['choices'][0]['message']['content']
